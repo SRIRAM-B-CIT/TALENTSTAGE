@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Star, 
@@ -27,6 +27,27 @@ interface ClientPortalProps {
 export default function ClientPortal({ onReviewSubmit }: ClientPortalProps) {
   const [talents, setTalents] = useState<Talent[]>(INITIAL_TALENTS);
   const [engagements, setEngagements] = useState<Engagement[]>(INITIAL_ENGAGEMENTS);
+
+  // Fetch talents and engagements on mount
+  useEffect(() => {
+    fetch('/api/talents')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setTalents(data);
+        }
+      })
+      .catch(err => console.error("Could not fetch talents from MongoDB:", err));
+
+    fetch('/api/engagements')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setEngagements(data);
+        }
+      })
+      .catch(err => console.error("Could not fetch engagements from MongoDB:", err));
+  }, []);
   
   // Feedback modal states
   const [selectedEngagement, setSelectedEngagement] = useState<Engagement | null>(null);
@@ -94,7 +115,7 @@ export default function ClientPortal({ onReviewSubmit }: ClientPortalProps) {
     : talents;
 
   return (
-    <div className="flex-1 font-sans text-on-surface bg-surface min-h-screen">
+    <div className="flex-1 font-sans text-on-surface bg-transparent">
       <header className="mb-8">
         <h1 className="text-3xl md:text-4xl font-sans font-bold text-white tracking-tight mb-2">Talent Registry</h1>
         <p className="text-sm md:text-base text-on-surface-variant max-w-xl leading-relaxed">

@@ -15,7 +15,7 @@ export const USER_AVATARS = {
 export const INITIAL_TALENTS: Talent[] = [
   {
     id: 'talent-1',
-    name: 'Marcus Thorne',
+    name: 'Rohan Sharma',
     title: 'Sr. AI Architecture Lead',
     imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuTeWyaFrJUojDJ_ogwEYYdwqnTDDAcwy3TTpvYbLjE2bkn0MiC56OQks5YMrvfFFasqGSr2mzKyw0Rkup6068x-0TbfaVTZn_gnslk-GzNFQYbaemo1I7UeJkLGA5R9TFStNLh-kbo7MiXJnQs2eppg7DpgBICv5gQ-Rqcg-99IDX4c0FWvnOXNaDhzfMPYkOhC0Ul98pUWp1UtF-ZHO0fbxJcfQhYjjray_CHbrEHHCWBRFvReAhIdH6SuU2ydsrOnod436TLEZE',
     status: 'Available Now',
@@ -25,7 +25,7 @@ export const INITIAL_TALENTS: Talent[] = [
   },
   {
     id: 'talent-2',
-    name: 'Elena Rossi',
+    name: 'Aarav Patel',
     title: 'Frontend Systems Designer',
     imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDzJfUSxNUCfkJky3gFeVph3-eY4zxhx-h--zsy7e2qaL7oPxMLB5Qb9o6Kv0VaWBkbRlXB1GNPmLsz0rIpjdOsPAZRhIOnegnpVICROewlUDtAsIOyUw7INSOUkAxuohJnRv8D_FHvXbAPwiQhxpbFDewgmcGvNqOJTuvgLElXBg9Ycw1zZqAnR3ZsrqPdivlJxR2rdqMlDuLl_qGsuOJbTJfIZZ-NyIPDni4zqVKOcpg8BlPXLBOwiPDYcP_B7WyAeZ9aa7dBN9c',
     status: 'In Contract',
@@ -35,7 +35,7 @@ export const INITIAL_TALENTS: Talent[] = [
   },
   {
     id: 'talent-3',
-    name: 'David Chen',
+    name: 'Priya Nair',
     title: 'Blockchain Security Audit',
     imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBeExtN_W8RtyP4HWVxIc6nNrWUA0hgO3XiYujR3GQ3kcitMQsIL1aDDM1rZC5-SEvGssaV35YPF0PBoYDYDMVCotbkz6cydmtm470FQJcJmHAqByCS7QpYoWI-2RZYMFeoSPA3a9sQ1iTzxMrh10DhUR4InG03gvbpNGkG6LzcQnvxoMGkwa0S8Ia-HehFJaFdKI4rMoVTHOBKZg5ibEEoWYv5O49JQXDzhcOPffA9raN7dJ0NcQtsJoWKtxQmQLs0n3040f6tb5g',
     status: 'Available Now',
@@ -45,7 +45,7 @@ export const INITIAL_TALENTS: Talent[] = [
   },
   {
     id: 'talent-4',
-    name: 'Sasha Vankov',
+    name: 'Ananya Rao',
     title: 'UX Strategy Lead',
     imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDexL9KzRhnwnqAd2Ks6whONmkhKpKeOFcM2Fxi9WkU5YHSWLr76lfMpWZHU25SDsWYL9teeHTMvnI62vAgiMe6xNkrOtlP9ozcFqEueo70zr397jhD2DQ3hXqess5ykL5PIa9xL8JsYuYktcwL_tMTKz8yV7omsCRNpi9Mju7ty5lz426wFuNzuPxax3JQ0wqQHIMOsaOhsjOC8g37Gr6J0mnEj0CPkcplTmmBBU4lGjOzsyHfnoRrGvWwW9oIAZv4qJlY8BFSukg',
     status: 'Available Now',
@@ -59,7 +59,7 @@ export const INITIAL_ENGAGEMENTS: Engagement[] = [
   {
     id: '#TS-2026-042',
     talentId: 'talent-2',
-    talentName: 'Elena Rossi',
+    talentName: 'Aarav Patel',
     talentAvatar: '',
     dateClosed: 'Oct 12, 2025',
     status: 'COMPLETED',
@@ -69,7 +69,7 @@ export const INITIAL_ENGAGEMENTS: Engagement[] = [
   {
     id: '#TS-2026-038',
     talentId: 'talent-5',
-    talentName: 'Jordan Vance',
+    talentName: 'Jagdish Vyas',
     talentAvatar: '',
     dateClosed: 'Sep 28, 2025',
     status: 'COMPLETED',
@@ -81,7 +81,7 @@ export const INITIAL_ENGAGEMENTS: Engagement[] = [
   {
     id: '#TS-2026-015',
     talentId: 'talent-1',
-    talentName: 'Marcus Thorne',
+    talentName: 'Rohan Sharma',
     talentAvatar: '',
     dateClosed: 'Aug 05, 2025',
     status: 'COMPLETED',
@@ -96,8 +96,8 @@ export const INITIAL_PROPOSALS: ProjectProposal[] = [
     title: 'Global Fintech Platform Design System',
     category: 'FINTECH / ENTERPRISE',
     description: 'Seeking a Senior UI Architect to lead the design system evolution for a Tier-1 Fintech expansion. Focus on scalability, multi-region accessibility, and high-density data visualization components.',
-    estimateMin: 15000,
-    estimateMax: 22000,
+    estimateMin: 1250000,
+    estimateMax: 1800000,
     duration: '3 months',
     level: 'EXPERT LEVEL',
     roles: ['UI', 'RX', 'DS'],
@@ -110,40 +110,40 @@ export const INITIAL_PROPOSALS: ProjectProposal[] = [
     title: 'Ethereum Validator Dashboard',
     category: 'WEB3 / INFRASTRUCTURE',
     description: 'Create a high-fidelity monitoring dashboard for large-scale validator nodes. Requires experience with D3.js and real-time WebSocket data integration.',
-    estimateMin: 8500,
-    estimateMax: 8500,
+    estimateMin: 700000,
+    estimateMax: 700000,
     duration: '1 - 3 months',
     level: 'EXPERT LEVEL',
     roles: ['W3', 'D3', 'TS'],
     matchScore: 92,
     verified: false,
-    fixedPrice: 8500,
+    fixedPrice: 700000,
     saved: false
   },
   {
     id: 'prop-3',
-    title: 'Prompt Engineer Interface',
+    title: 'Prompt Tuning & LLM Evaluation Deck',
     category: 'AI / LLM OPS',
     description: 'Internal tooling for prompt versioning and A/B testing outputs. Minimalist, developer-centric UI with focus on keyboard shortcuts.',
-    estimateMin: 12000,
-    estimateMax: 12000,
+    estimateMin: 1000000,
+    estimateMax: 1000000,
     duration: '1 - 3 months',
     level: 'EXPERT LEVEL',
     roles: ['AI', 'UX', 'KB'],
     matchScore: 89,
     verified: false,
-    fixedPrice: 12000,
+    fixedPrice: 1000000,
     saved: false
   }
 ];
 
 export const DEFAULT_PROFILE: ProfileCore = {
-  fullName: 'Alex Sterling',
-  title: 'Senior Creative Technologist',
-  hourlyRate: 110,
+  fullName: 'Amit Verma',
+  title: 'Senior Software Architect',
+  hourlyRate: 4500,
   skills: 'React, Node.js, WebGL, D3.js, Tailwind CSS',
-  companyName: 'Sterling Creative Labs',
+  companyName: 'Zenith Tech Systems',
   industry: 'Technology & SaaS',
-  websiteUrl: 'https://sterlingcreativelabs.com',
+  websiteUrl: 'https://zenithtech.in',
   description: 'Specializing in premium high-density visualization dashboards, Web3 secure frontends, and custom AI scoping engine integrations for high-end enterprises.'
 };

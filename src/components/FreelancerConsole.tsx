@@ -16,7 +16,7 @@ import {
   TrendingUp, 
   Brain, 
   Download, 
-  DollarSign, 
+  IndianRupee, 
   AlertTriangle, 
   Check, 
   Sparkles,
@@ -30,7 +30,7 @@ interface FreelancerConsoleProps {
 
 export default function FreelancerConsole({ onUpgradeTrigger }: FreelancerConsoleProps) {
   // Local finances state
-  const [netFunds, setNetFunds] = useState(11250);
+  const [netFunds, setNetFunds] = useState(1125000); // Scaled to ₹11.25L INR
   const [withdrawing, setWithdrawing] = useState(false);
   const [hasWithdrawn, setHasWithdrawn] = useState(false);
 
@@ -51,9 +51,9 @@ export default function FreelancerConsole({ onUpgradeTrigger }: FreelancerConsol
   // Simulated CSV Export
   const handleExportCSV = () => {
     const csvContent = "data:text/csv;charset=utf-8," 
-      + "Transaction Type,Details,Amount\n"
-      + "Gross Billings,5 Active Contracts,12500.00\n"
-      + "Commission,10% Platform Fee,-1250.00\n"
+      + "Transaction Type,Details,Amount (INR)\n"
+      + "Gross Billings,5 Active Contracts,1250000.00\n"
+      + "Commission,10% Platform Fee,-125000.00\n"
       + "Net Funds,Ready for Payout," + netFunds + "\n";
     
     const encodedUri = encodeURI(csvContent);
@@ -139,7 +139,7 @@ export default function FreelancerConsole({ onUpgradeTrigger }: FreelancerConsol
   };
 
   return (
-    <div className="flex-1 font-sans text-on-surface bg-surface min-h-screen">
+    <div className="flex-1 font-sans text-on-surface bg-transparent">
       <header className="mb-8">
         <h1 className="text-3xl md:text-4xl font-sans font-bold text-white tracking-tight mb-2">Overview / Workspace</h1>
         <p className="text-sm md:text-base text-on-surface-variant max-w-xl">
@@ -208,18 +208,18 @@ export default function FreelancerConsole({ onUpgradeTrigger }: FreelancerConsol
                   <tr>
                     <td className="py-4 font-sans text-sm font-semibold text-white">Gross Billings</td>
                     <td className="py-4 text-right text-on-surface-variant">5 Active Contracts</td>
-                    <td className="py-4 text-right font-bold text-white">$12,500.00</td>
+                    <td className="py-4 text-right font-bold text-white">₹12,50,000.00</td>
                   </tr>
                   <tr>
                     <td className="py-4 font-sans text-sm font-semibold text-white">Commission</td>
                     <td className="py-4 text-right text-on-surface-variant">10% Platform Fee</td>
-                    <td className="py-4 text-right font-bold text-red-400">-$1,250.00</td>
+                    <td className="py-4 text-right font-bold text-red-400">-₹1,25,000.00</td>
                   </tr>
                   <tr className="border-t-2 border-border-dark">
                     <td className="py-4 font-sans text-sm font-black text-white">Net Funds</td>
                     <td className="py-4 text-right text-zinc-400 font-sans italic">Ready for Payout</td>
                     <td className="py-4 text-right text-primary font-black text-lg">
-                      ${netFunds.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      ₹{netFunds.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
                   </tr>
                 </tbody>
@@ -247,7 +247,7 @@ export default function FreelancerConsole({ onUpgradeTrigger }: FreelancerConsol
                 </>
               ) : (
                 <>
-                  <DollarSign className="w-3.5 h-3.5" />
+                  <IndianRupee className="w-3.5 h-3.5" />
                   <span>Withdraw Funds</span>
                 </>
               )}

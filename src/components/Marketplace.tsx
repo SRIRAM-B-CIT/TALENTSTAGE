@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Check, 
@@ -30,6 +30,18 @@ interface MarketplaceProps {
 export default function Marketplace({ onProposalTrigger }: MarketplaceProps) {
   // Propoals state
   const [proposals, setProposals] = useState<ProjectProposal[]>(INITIAL_PROPOSALS);
+
+  // Fetch proposals on component mount
+  useEffect(() => {
+    fetch('/api/proposals')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setProposals(data);
+        }
+      })
+      .catch(err => console.error("Could not load proposals from MongoDB:", err));
+  }, []);
   
   // Interactive filters
   const [aiMatrix, setAiMatrix] = useState(true);
@@ -65,6 +77,11 @@ export default function Marketplace({ onProposalTrigger }: MarketplaceProps) {
     setProposals(prev => 
       prev.map(p => p.id === id ? { ...p, saved: !p.saved } : p)
     );
+    fetch('/api/proposals/toggle-bookmark', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id })
+    }).catch(err => console.error("Error toggling bookmark on MongoDB:", err));
   };
 
   // Run dynamic filtering
@@ -96,9 +113,9 @@ export default function Marketplace({ onProposalTrigger }: MarketplaceProps) {
       let match = false;
       const budgetMax = p.fixedPrice || p.estimateMax;
       
-      if (selectedBudgets.includes('5k-10k') && budgetMax >= 5000 && budgetMax <= 10000) match = true;
-      if (selectedBudgets.includes('10k-25k') && budgetMax > 10000 && budgetMax <= 25000) match = true;
-      if (selectedBudgets.includes('25k-50k') && budgetMax > 25000) match = true;
+      if (selectedBudgets.includes('5k-10k') && budgetMax >= 500000 && budgetMax <= 1000000) match = true;
+      if (selectedBudgets.includes('10k-25k') && budgetMax > 1000000 && budgetMax <= 2500000) match = true;
+      if (selectedBudgets.includes('25k-50k') && budgetMax > 2500000) match = true;
       
       if (!match) return false;
     }
@@ -107,7 +124,7 @@ export default function Marketplace({ onProposalTrigger }: MarketplaceProps) {
   });
 
   return (
-    <div className="flex-1 font-sans text-on-surface bg-surface min-h-screen">
+    <div className="flex-1 font-sans text-on-surface bg-transparent">
       <div className="flex flex-col lg:flex-row gap-6">
         
         {/* Left Filters Sidebar */}
@@ -181,9 +198,9 @@ export default function Marketplace({ onProposalTrigger }: MarketplaceProps) {
               <h3 className="text-[10px] font-mono text-on-surface-variant uppercase tracking-widest block mb-3 font-semibold">Budget Range</h3>
               <div className="space-y-2 text-xs">
                 {[
-                  { id: '5k-10k', label: '$5k - $10k' },
-                  { id: '10k-25k', label: '$10k - $25k' },
-                  { id: '25k-50k', label: '$25k - $50k+' }
+                  { id: '5k-10k', label: '₹5 Lakhs - ₹10 Lakhs' },
+                  { id: '10k-25k', label: '₹10 Lakhs - ₹25 Lakhs' },
+                  { id: '25k-50k', label: '₹25 Lakhs - ₹50 Lakhs+' }
                 ].map(item => {
                   const isActive = selectedBudgets.includes(item.id);
                   return (
@@ -297,7 +314,7 @@ export default function Marketplace({ onProposalTrigger }: MarketplaceProps) {
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-black text-primary font-mono leading-none">
-                            ${prop.fixedPrice ? prop.fixedPrice.toLocaleString() : `${prop.estimateMin.toLocaleString()} - $${prop.estimateMax.toLocaleString()}`}
+                            ₹{prop.fixedPrice ? prop.fixedPrice.toLocaleString() : `${prop.estimateMin.toLocaleString()} - ₹${prop.estimateMax.toLocaleString()}`}
                           </p>
                           <span className="text-[9px] font-mono tracking-wider font-bold text-on-surface-variant block mt-1.5 uppercase">
                             {prop.fixedPrice ? 'FIXED PRICE' : 'PROJECT ESTIMATE'}
@@ -445,7 +462,7 @@ export default function Marketplace({ onProposalTrigger }: MarketplaceProps) {
                 <div className="pt-4 border-t border-border-dark bg-surface-lowest p-3 rounded-lg flex justify-between items-center font-mono">
                   <span className="text-zinc-500">Estimate</span>
                   <span className="text-white font-bold text-sm">
-                    ${quickViewProp.fixedPrice ? quickViewProp.fixedPrice.toLocaleString() : `${quickViewProp.estimateMin.toLocaleString()} - $${quickViewProp.estimateMax.toLocaleString()}`}
+                    ₹{quickViewProp.fixedPrice ? quickViewProp.fixedPrice.toLocaleString() : `${quickViewProp.estimateMin.toLocaleString()} - ₹${quickViewProp.estimateMax.toLocaleString()}`}
                   </span>
                 </div>
               </div>
@@ -458,7 +475,7 @@ export default function Marketplace({ onProposalTrigger }: MarketplaceProps) {
                 }}
                 className="w-full bg-primary hover:brightness-110 text-on-primary font-bold py-3 mt-6 rounded-lg text-xs uppercase tracking-wider transition-all"
               >
-                Submit Proposal for $ {quickViewProp.fixedPrice || quickViewProp.estimateMin}
+                Submit Proposal for ₹{(quickViewProp.fixedPrice || quickViewProp.estimateMin).toLocaleString()}
               </button>
             </motion.div>
           </div>

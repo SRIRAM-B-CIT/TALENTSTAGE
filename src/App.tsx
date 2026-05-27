@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Menu, 
@@ -31,6 +31,18 @@ import EscrowVault from './components/EscrowVault';
 export default function App() {
   const [activeScreen, setActiveScreen] = useState<ActiveScreen>('landing');
   const [userProfile, setUserProfile] = useState<ProfileCore>(DEFAULT_PROFILE);
+
+  // Fetch profile on initial load
+  useEffect(() => {
+    fetch('/api/profile')
+      .then(res => res.json())
+      .then(data => {
+        if (data && !data.error) {
+          setUserProfile(data);
+        }
+      })
+      .catch(err => console.error("Could not fetch active profile from MongoDB:", err));
+  }, []);
   
   // Mobile nav toggler
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -43,9 +55,23 @@ export default function App() {
 
   // Profile save updates
   const handleProfileSave = (updated: ProfileCore) => {
-    setUserProfile(updated);
-    setActiveScreen('freelancer-console'); // Shift straight to dashboard Workspace to view audit outcome!
-    triggerToast("Hybrid identity updated successfully and indexed for matching!");
+    fetch('/api/profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updated)
+    })
+    .then(res => res.json())
+    .then(() => {
+      setUserProfile(updated);
+      setActiveScreen('freelancer-console'); // Shift straight to dashboard Workspace to view audit outcome!
+      triggerToast("Hybrid identity saved securely to MongoDB database!");
+    })
+    .catch(err => {
+      console.error("Could not save profile to MongoDB:", err);
+      setUserProfile(updated);
+      setActiveScreen('freelancer-console');
+      triggerToast("Profile updated locally (offline mode)");
+    });
   };
 
   const triggerToast = (msg: string) => {
@@ -66,9 +92,9 @@ export default function App() {
       
       {/* Frosted Glass glowing ambient background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute -top-24 -left-24 w-96 h-96 bg-indigo-600/20 rounded-full blur-[120px]" />
-        <div className="absolute top-1/2 left-1/4 w-80 h-80 bg-purple-600/15 rounded-full blur-[100px]" />
-        <div className="absolute -bottom-24 -right-24 w-[500px] h-[500px] bg-blue-500/15 rounded-full blur-[140px]" />
+        <div className="absolute -top-24 -left-24 w-96 h-96 bg-indigo-600/30 rounded-full blur-[120px]" />
+        <div className="absolute top-1/2 left-1/4 w-80 h-80 bg-purple-600/20 rounded-full blur-[100px]" />
+        <div className="absolute -bottom-24 -right-24 w-[500px] h-[500px] bg-blue-500/20 rounded-full blur-[140px]" />
       </div>
 
       <div className="relative z-10">

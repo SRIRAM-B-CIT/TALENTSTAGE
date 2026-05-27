@@ -46,7 +46,7 @@ export default function Onboarding({ onSave }: OnboardingProps) {
   };
 
   return (
-    <div className="flex-1 font-sans text-on-surface bg-surface min-h-screen">
+    <div className="flex-1 font-sans text-on-surface bg-transparent">
       <div className="max-w-3xl mx-auto">
         
         {/* Progress Tracker (Screen 2 Progress Bar) */}
@@ -157,9 +157,9 @@ export default function Onboarding({ onSave }: OnboardingProps) {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-mono text-on-surface-variant font-bold uppercase tracking-wider block">Hourly Rate (USD)</label>
+                  <label className="text-[10px] font-mono text-on-surface-variant font-bold uppercase tracking-wider block">Hourly Rate (INR)</label>
                   <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm font-semibold">$</span>
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm font-semibold">₹</span>
                     <input
                       type="number"
                       required

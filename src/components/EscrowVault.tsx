@@ -198,20 +198,20 @@ export default function EscrowVault({ proposal, onClose, onSuccess }: EscrowVaul
             <div className="bg-surface-lowest border border-border-dark p-4 rounded-xl space-y-2.5">
               <div className="flex justify-between text-xs text-on-surface-variant font-medium">
                 <span>Milestone Subtotal</span>
-                <span className="text-white font-mono">${subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span className="text-white font-mono">₹{subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
               <div className="flex justify-between text-xs text-on-surface-variant font-medium">
                 <span>Platform Protection Protection</span>
-                <span className="text-white font-mono">${platformFee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span className="text-white font-mono">₹{platformFee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
               <div className="flex justify-between text-xs text-on-surface-variant font-medium">
                 <span>Pro Pack Protection</span>
-                <span className="text-white font-mono">${proFee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span className="text-white font-mono">₹{proFee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
               <div className="h-[1px] bg-border-dark.60 my-2" />
               <div className="flex justify-between text-sm font-black text-white">
                 <span>Total Escrow Outflow</span>
-                <span className="text-primary font-mono text-base">${totalEscrow.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span className="text-primary font-mono text-base">₹{totalEscrow.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
             </div>
 

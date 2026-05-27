@@ -83,8 +83,8 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-surface font-sans text-on-surface select-none">
-      <main className="pt-28 pb-24 px-8 max-w-7xl mx-auto">
+    <div className="bg-transparent font-sans text-on-surface select-none">
+      <main className="pb-24 max-w-7xl mx-auto">
         {/* Hero Section */}
         <section className="text-center mb-24 max-w-4xl mx-auto">
           <motion.div
@@ -239,7 +239,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                       <div>
                         <span className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider block mb-1">Estimated Budget</span>
                         <span className="text-primary font-mono font-bold">
-                          ${scopedResult.estimateMin.toLocaleString()} - ${scopedResult.estimateMax.toLocaleString()}
+                          ₹{scopedResult.estimateMin.toLocaleString()} - ₹{scopedResult.estimateMax.toLocaleString()}
                         </span>
                       </div>
                       <div>

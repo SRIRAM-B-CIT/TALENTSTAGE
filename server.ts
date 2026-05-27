@@ -7,6 +7,7 @@ import express from 'express';
 import path from 'path';
 import {GoogleGenAI, Type} from '@google/genai';
 import {createServer as createViteServer} from 'vite';
+import { getDbClient, initDatabase, isDbConnected } from './mongodb-client';
 
 const app = express();
 const PORT = 3000;
@@ -201,8 +202,8 @@ app.post('/api/scope', async (req, res) => {
     // Pattern matching to simulate real intelligent scoping
     let title = 'Global Digital Strategy Architecture';
     let category = 'DESIGN & ARCHITECTURE';
-    let minBudget = 12000;
-    let maxBudget = 18000;
+    let minBudget = 1000000; // 10 Lakhs INR
+    let maxBudget = 1500000; // 15 Lakhs INR
     let duration = '1 - 3 months';
     let level: 'EXPERT LEVEL' | 'MID LEVEL' = 'EXPERT LEVEL';
     let technicalRequirements = [
@@ -219,8 +220,8 @@ app.post('/api/scope', async (req, res) => {
     if (briefStr.includes('dashboard') || briefStr.includes('ethereum') || briefStr.includes('web3') || briefStr.includes('validator')) {
       title = 'Ethereum Node Validator Interface';
       category = 'WEB3 / INFRASTRUCTURE';
-      minBudget = 8500;
-      maxBudget = 14000;
+      minBudget = 700000; // 7 Lakhs INR
+      maxBudget = 1200000; // 12 Lakhs INR
       duration = '1 - 3 months';
       level = 'EXPERT LEVEL';
       technicalRequirements = [
@@ -236,8 +237,8 @@ app.post('/api/scope', async (req, res) => {
     } else if (briefStr.includes('prompt') || briefStr.includes('interface') || briefStr.includes('ai') || briefStr.includes('llm')) {
       title = 'Prompt Tuning & LLM Evaluation Deck';
       category = 'AI / LLM OPS';
-      minBudget = 10000;
-      maxBudget = 22000;
+      minBudget = 850000; // 8.5 Lakhs INR
+      maxBudget = 1800000; // 18 Lakhs INR
       duration = '3 - 6 months';
       level = 'EXPERT LEVEL';
       technicalRequirements = [
@@ -273,7 +274,7 @@ app.post('/api/scope', async (req, res) => {
     Deconstruct this brief into professional, actionable components:
     1. A refined, premium title for the role/contract.
     2. A category grouping: e.g. "WEB3 / INFRASTRUCTURE", "AI / LLM OPS", "DESIGN & ARCHITECTURE", or "FINTECH".
-    3. Estimated minimum and maximum project budget (in USD, integers).
+    3. Estimated minimum and maximum project budget (in Indian Rupees INR, integers).
     4. Duration phrase (e.g., "1 - 3 months", "3 - 6 months").
     5. Difficulty matching tier: "EXPERT LEVEL", "MID LEVEL", "ENTRY LEVEL".
     6. Exact list of structural technical deliverables (3 distinct requirements).
@@ -343,8 +344,155 @@ app.post('/api/scope', async (req, res) => {
   }
 });
 
+// 3. MongoDB Endpoint: Test & Connection Health
+app.get('/api/db-health', async (req, res) => {
+  try {
+    const isConnected = isDbConnected();
+    return res.json({
+      connected: isConnected,
+      message: isConnected ? "Database online and synced with Indian telemetry data sets!" : "Database offline"
+    });
+  } catch (err: any) {
+    return res.status(500).json({ error: "Failed to fetch db health", details: err.message });
+  }
+});
+
+// 4. MongoDB Endpoint: Fetch Talents (Indianized)
+app.get('/api/talents', async (req, res) => {
+  try {
+    const client = await getDbClient();
+    const talents = await client.db("talentstage_db").collection("talents").find({}).toArray();
+    return res.json(talents);
+  } catch (err: any) {
+    return res.status(500).json({ error: "Failed to fetch talents from MongoDB", details: err.message });
+  }
+});
+
+// 5. MongoDB Endpoint: Fetch Project Proposals (Rupees)
+app.get('/api/proposals', async (req, res) => {
+  try {
+    const client = await getDbClient();
+    const proposals = await client.db("talentstage_db").collection("proposals").find({}).toArray();
+    return res.json(proposals);
+  } catch (err: any) {
+    return res.status(500).json({ error: "Failed to fetch proposals from MongoDB", details: err.message });
+  }
+});
+
+// 6. MongoDB Endpoint: Create Project Proposal (Scoping output)
+app.post('/api/proposals', async (req, res) => {
+  try {
+    const proposalData = req.body;
+    const client = await getDbClient();
+    const proposalsCollection = client.db("talentstage_db").collection("proposals");
+    
+    // Ensure id is set or generate a simple unique id
+    if (!proposalData.id) {
+      proposalData.id = `prop-${Date.now()}`;
+    }
+    proposalData.saved = false;
+    proposalData.verified = proposalData.verified || false;
+    proposalData.matchScore = proposalData.matchScore || Math.floor(Math.random() * 20) + 80;
+
+    await proposalsCollection.insertOne(proposalData);
+    return res.json({ success: true, proposal: proposalData });
+  } catch (err: any) {
+    return res.status(500).json({ error: "Failed to insert proposal into MongoDB", details: err.message });
+  }
+});
+
+// 7. MongoDB Endpoint: Toggle bookmark saved state
+app.post('/api/proposals/toggle-bookmark', async (req, res) => {
+  try {
+    const { id } = req.body;
+    if (!id) return res.status(400).json({ error: "Proposal ID is required" });
+
+    const client = await getDbClient();
+    const proposalsCollection = client.db("talentstage_db").collection("proposals");
+    const proposal = await proposalsCollection.findOne({ id });
+    if (!proposal) return res.status(404).json({ error: "Proposal not found" });
+
+    const updatedSaved = !proposal.saved;
+    await proposalsCollection.updateOne({ id }, { $set: { saved: updatedSaved } });
+    return res.json({ success: true, saved: updatedSaved });
+  } catch (err: any) {
+    return res.status(500).json({ error: "Failed to toggle bookmark", details: err.message });
+  }
+});
+
+// 8. MongoDB Endpoint: Fetch Engagements/Ledger
+app.get('/api/engagements', async (req, res) => {
+  try {
+    const client = await getDbClient();
+    const engagements = await client.db("talentstage_db").collection("engagements").find({}).toArray();
+    return res.json(engagements);
+  } catch (err: any) {
+    return res.status(500).json({ error: "Failed to fetch engagements from MongoDB", details: err.message });
+  }
+});
+
+// 9. MongoDB Endpoint: Fetch active single user profile
+app.get('/api/profile', async (req, res) => {
+  try {
+    const client = await getDbClient();
+    const profilesCollection = client.db("talentstage_db").collection("profiles");
+    let profile = await profilesCollection.findOne({ _id: 'default_user' as any });
+    if (!profile) {
+      // Fallback seed
+      const { DEFAULT_PROFILE } = require('./src/data');
+      await profilesCollection.insertOne({ _id: 'default_user' as any, ...DEFAULT_PROFILE });
+      profile = await profilesCollection.findOne({ _id: 'default_user' as any });
+    }
+    return res.json(profile);
+  } catch (err: any) {
+    return res.status(500).json({ error: "Failed to fetch profile from MongoDB", details: err.message });
+  }
+});
+
+// 10. MongoDB Endpoint: Update user profile
+app.post('/api/profile', async (req, res) => {
+  try {
+    const profileData = req.body;
+    const client = await getDbClient();
+    const profilesCollection = client.db("talentstage_db").collection("profiles");
+    const docToSave = { ...profileData };
+    delete docToSave._id; // Ensure we don't cause MongoDB immutable _id error
+    await profilesCollection.replaceOne({ _id: 'default_user' as any }, { _id: 'default_user' as any, ...docToSave }, { upsert: true });
+    return res.json({ success: true, profile: profileData });
+  } catch (err: any) {
+    return res.status(500).json({ error: "Failed to update profile space in MongoDB", details: err.message });
+  }
+});
+
+// 11. MongoDB Endpoint: Secure Escrow creation & milestone booking
+app.post('/api/escrow', async (req, res) => {
+  try {
+    const { proposalId, talentName, projectName, totalAmount } = req.body;
+    const client = await getDbClient();
+    const engagementsCollection = client.db("talentstage_db").collection("engagements");
+
+    const newEngagement = {
+      id: `#TS-2026-${Math.floor(Math.random() * 900) + 100}`,
+      talentId: `talent-${Math.floor(Math.random() * 4) + 1}`,
+      talentName: talentName || "Amit Patel",
+      dateClosed: new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+      status: 'IN_PROGRESS',
+      reviewed: false,
+      projectName: projectName || "Decentralized Escrow System"
+    };
+
+    await engagementsCollection.insertOne(newEngagement);
+    return res.json({ success: true, engagement: newEngagement });
+  } catch (err: any) {
+    return res.status(500).json({ error: "Failed to register escrow milestone to MongoDB", details: err.message });
+  }
+});
+
 // Configure Vite middleware in development or serve static build dir in production
 async function startServer() {
+  // Initialize and check/seed MongoDB tables
+  await initDatabase();
+
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       server: {middlewareMode: true},
