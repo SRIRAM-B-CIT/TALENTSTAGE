@@ -6,7 +6,15 @@
 import { MongoClient } from 'mongodb';
 import { INITIAL_TALENTS, INITIAL_PROPOSALS, INITIAL_ENGAGEMENTS, DEFAULT_PROFILE } from './src/data';
 
-const MONGO_URI = process.env.MONGODB_URI;
+let rawUri = process.env.MONGODB_URI || "";
+if (rawUri) {
+  rawUri = rawUri.trim();
+  if ((rawUri.startsWith('"') && rawUri.endsWith('"')) || 
+      (rawUri.startsWith("'") && rawUri.endsWith("'"))) {
+    rawUri = rawUri.slice(1, -1).trim();
+  }
+}
+const MONGO_URI = rawUri;
 const DB_NAME = "talentstage_db";
 
 let client: MongoClient | null = null;
@@ -159,6 +167,8 @@ export async function getDbClient(): Promise<MongoClient> {
       await client.connect();
       dbConnected = true;
       console.log("Successfully connected to MongoDB cluster!");
+      // Lazy background seeding
+      initDatabase().catch(e => console.warn("Lazy database seed failed:", e));
     } catch (err: any) {
       console.error("Failed to connect to MongoDB Atlas. Falling back to high-fidelity Local In-Memory Database Mode. Error details:", err.message);
       isUsingMemoryStore = true;
@@ -173,7 +183,11 @@ export function isDbConnected(): boolean {
   return dbConnected;
 }
 
+let hasSeeded = false;
+
 export async function initDatabase() {
+  if (hasSeeded) return;
+  hasSeeded = true;
   try {
     const mongoClient = await getDbClient();
     const db = mongoClient.db(DB_NAME);
