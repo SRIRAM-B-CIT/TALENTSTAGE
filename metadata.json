@@ -1,0 +1,6 @@
+{
+  "name": "TalentStage",
+  "description": "The Premium AI-Verified Elite Talent Marketplace and Freelancer Console",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
