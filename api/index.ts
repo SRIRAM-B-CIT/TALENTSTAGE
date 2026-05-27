@@ -6,18 +6,9 @@
 import app from '../server';
 import { initDatabase } from '../mongodb-client';
 
-// Lazy init the DB connection under Vercel serverless functions
-let isDbReady = false;
-app.use(async (req, res, next) => {
-  if (!isDbReady) {
-    try {
-      await initDatabase();
-      isDbReady = true;
-    } catch (err) {
-      console.error("Failed serverless database initial connection:", err);
-    }
-  }
-  next();
+// Eagerly initialize and seed database on serverless cold starts
+initDatabase().catch(err => {
+  console.warn("Eager database initialization failed/resilient fallback active:", err);
 });
 
 export default app;

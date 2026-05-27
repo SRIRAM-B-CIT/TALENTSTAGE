@@ -95,7 +95,14 @@ export default function Auth({ onLoginSuccess, onNavigateTo }: AuthProps) {
         body: JSON.stringify(body)
       });
 
-      const data = await response.json();
+      let data: any = {};
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        throw new Error(text.slice(0, 100) || "Gateway returned empty non-JSON response");
+      }
 
       if (!response.ok) {
         throw new Error(data.error || 'Authentication aborted');
@@ -121,12 +128,22 @@ export default function Auth({ onLoginSuccess, onNavigateTo }: AuthProps) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
           })
-          .then(res => res.json())
+          .then(async res => {
+            const cType = res.headers.get("content-type");
+            if (cType && cType.includes("application/json")) {
+              return res.json();
+            }
+            throw new Error(await res.text());
+          })
           .then(loginData => {
             setLoading(false);
             if (loginData.user) {
               onLoginSuccess(loginData.user, loginData.profile);
             }
+          })
+          .catch(e => {
+            setLoading(false);
+            setErrorMsg("Fallback login setup: " + e.message);
           });
         }, 2000);
       }

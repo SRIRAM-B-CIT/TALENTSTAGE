@@ -151,7 +151,11 @@ export async function getDbClient(): Promise<MongoClient> {
     }
 
     try {
-      client = new MongoClient(MONGO_URI);
+      client = new MongoClient(MONGO_URI, {
+        connectTimeoutMS: 2000,
+        socketTimeoutMS: 2000,
+        serverSelectionTimeoutMS: 2000,
+      });
       await client.connect();
       dbConnected = true;
       console.log("Successfully connected to MongoDB cluster!");
