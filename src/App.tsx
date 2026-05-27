@@ -15,7 +15,10 @@ import {
   ShieldCheck, 
   Terminal, 
   Sparkles,
-  CheckCircle2
+  CheckCircle2,
+  LogOut,
+  Zap,
+  Check
 } from 'lucide-react';
 
 import { ActiveScreen, ProfileCore, ProjectProposal } from './types';
@@ -27,14 +30,41 @@ import FreelancerConsole from './components/FreelancerConsole';
 import Marketplace from './components/Marketplace';
 import Onboarding from './components/Onboarding';
 import EscrowVault from './components/EscrowVault';
+import Auth from './components/Auth';
+import NewUserTour from './components/NewUserTour';
+import SkillVerification from './components/SkillVerification';
+import Inbox from './components/Inbox';
 
 export default function App() {
   const [activeScreen, setActiveScreen] = useState<ActiveScreen>('landing');
+  const [currentUser, setCurrentUser] = useState<any>(() => {
+    try {
+      const stored = localStorage.getItem('talentstage_user');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
   const [userProfile, setUserProfile] = useState<ProfileCore>(DEFAULT_PROFILE);
 
-  // Fetch profile on initial load
+  const [tourCompleted, setTourCompleted] = useState<boolean>(() => {
+    return localStorage.getItem('talentstage_tour_completed') === 'true';
+  });
+  const [tourActive, setTourActive] = useState(false);
+
   useEffect(() => {
-    fetch('/api/profile')
+    if (currentUser && !tourCompleted) {
+      setTourActive(true);
+    }
+  }, [currentUser, tourCompleted]);
+
+  // Fetch profile whenever active session user changes
+  useEffect(() => {
+    const headers: Record<string, string> = {};
+    if (currentUser && currentUser._id) {
+      headers['x-user-id'] = currentUser._id;
+    }
+    fetch('/api/profile', { headers })
       .then(res => res.json())
       .then(data => {
         if (data && !data.error) {
@@ -42,7 +72,7 @@ export default function App() {
         }
       })
       .catch(err => console.error("Could not fetch active profile from MongoDB:", err));
-  }, []);
+  }, [currentUser]);
   
   // Mobile nav toggler
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -55,9 +85,13 @@ export default function App() {
 
   // Profile save updates
   const handleProfileSave = (updated: ProfileCore) => {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (currentUser && currentUser._id) {
+      headers['x-user-id'] = currentUser._id;
+    }
     fetch('/api/profile', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(updated)
     })
     .then(res => res.json())
@@ -81,10 +115,25 @@ export default function App() {
     }, 4500);
   };
 
-  // Nav actions
+  // Nav actions with authentication gates
   const navigateTo = (screen: ActiveScreen) => {
+    if (!currentUser && (screen === 'freelancer-console' || screen === 'client-portal' || screen === 'onboarding')) {
+      setActiveScreen('auth');
+      triggerToast("Authentication required. Please log in or register your account.");
+      setMobileMenuOpen(false);
+      return;
+    }
     setActiveScreen(screen);
     setMobileMenuOpen(false);
+  };
+
+  // Sign out handler
+  const handleSignOut = () => {
+    localStorage.removeItem('talentstage_user');
+    setCurrentUser(null);
+    setUserProfile(DEFAULT_PROFILE);
+    setActiveScreen('landing');
+    triggerToast("Logged out successfully from TalentStage.");
   };
 
   return (
@@ -121,7 +170,7 @@ export default function App() {
               onClick={() => navigateTo('landing')} 
               className={`px-3 py-2 rounded-lg hover:text-white transition-colors cursor-pointer ${activeScreen === 'landing' ? 'text-primary' : ''}`}
             >
-              System Overview
+              Overview
             </button>
             <button 
               onClick={() => navigateTo('marketplace')} 
@@ -133,25 +182,71 @@ export default function App() {
               onClick={() => navigateTo('freelancer-console')} 
               className={`px-3 py-2 rounded-lg hover:text-white transition-colors cursor-pointer ${activeScreen === 'freelancer-console' ? 'text-primary' : ''}`}
             >
-              Freelancer Console
+              Console
             </button>
             <button 
               onClick={() => navigateTo('client-portal')} 
               className={`px-3 py-2 rounded-lg hover:text-white transition-colors cursor-pointer ${activeScreen === 'client-portal' ? 'text-primary' : ''}`}
             >
-              Client Portal
+              Portal
+            </button>
+            <button 
+              onClick={() => navigateTo('inbox')} 
+              className={`px-3 py-2 rounded-lg hover:text-white transition-colors cursor-pointer ${activeScreen === 'inbox' ? 'text-primary' : ''}`}
+            >
+              Inbox
+            </button>
+            <button 
+              onClick={() => navigateTo('skill-verification')} 
+              className={`px-3 py-2 rounded-lg hover:text-white transition-colors cursor-pointer ${activeScreen === 'skill-verification' ? 'text-primary' : ''}`}
+            >
+              Verification
             </button>
           </nav>
 
           {/* User widget profile trigger */}
           <div className="hidden md:flex items-center gap-3">
-            <button 
-              onClick={() => navigateTo('onboarding')}
-              className="px-4 py-2 bg-surface-container border border-border-dark hover:border-zinc-700 text-xs font-bold rounded-lg transition-colors cursor-pointer flex items-center gap-2"
-            >
-              <User className="w-3.5 h-3.5 text-primary" />
-              <span>{userProfile.fullName}</span>
-            </button>
+            {currentUser && (
+              <button 
+                onClick={() => setTourActive(true)}
+                className="p-2 bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-xs font-mono font-bold text-zinc-400 hover:text-white rounded-lg transition-colors cursor-pointer"
+                title="Start walkthrough tour"
+              >
+                Guide Tour
+              </button>
+            )}
+            {currentUser ? (
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => navigateTo('onboarding')}
+                  className="px-4 py-2 bg-surface-container border border-border-dark hover:border-zinc-700 text-xs font-bold rounded-lg transition-colors cursor-pointer flex items-center gap-2"
+                >
+                  <User className="w-3.5 h-3.5 text-primary" />
+                  <span className="text-white">{userProfile.fullName}</span>
+                  {currentUser.isPro && (
+                    <span className="flex items-center gap-0.5 px-1.5 py-0.5 bg-amber-400/10 text-amber-400 font-mono text-[8px] uppercase font-black rounded border border-amber-400/20">
+                      <Zap className="w-2.5 h-2.5 fill-amber-400" />
+                      Pro
+                    </span>
+                  )}
+                </button>
+                <button
+                  onClick={handleSignOut}
+                  title="Sign Out"
+                  className="p-2 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 text-red-400 hover:text-red-300 rounded-lg transition-colors cursor-pointer"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <button 
+                onClick={() => navigateTo('auth')}
+                className="px-4 py-2 bg-primary hover:brightness-110 text-on-primary text-xs font-bold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 shadow-md shadow-primary/10"
+              >
+                <span>Sign In / Join</span>
+                <Sparkles className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
           {/* Mobile Hamburg Trigger */}
@@ -198,6 +293,18 @@ export default function App() {
                 className={`text-left py-2 ${activeScreen === 'client-portal' ? 'text-primary' : ''}`}
               >
                 Client Portal
+              </button>
+              <button 
+                onClick={() => navigateTo('inbox')} 
+                className={`text-left py-2 ${activeScreen === 'inbox' ? 'text-primary' : ''}`}
+              >
+                Inbox Chat
+              </button>
+              <button 
+                onClick={() => navigateTo('skill-verification')} 
+                className={`text-left py-2 ${activeScreen === 'skill-verification' ? 'text-primary' : ''}`}
+              >
+                Verification Rules
               </button>
               <button 
                 onClick={() => navigateTo('onboarding')} 
@@ -267,7 +374,10 @@ export default function App() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
             >
-              <FreelancerConsole />
+              <FreelancerConsole 
+                userProfile={userProfile}
+                currentUser={currentUser}
+              />
             </motion.div>
           )}
 
@@ -298,6 +408,65 @@ export default function App() {
               <Onboarding onSave={handleProfileSave} />
             </motion.div>
           )}
+
+          {activeScreen === 'inbox' && (
+            <motion.div
+              key="inbox"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Inbox 
+                userProfile={userProfile}
+                currentUser={currentUser}
+                triggerToast={triggerToast}
+              />
+            </motion.div>
+          )}
+
+          {activeScreen === 'skill-verification' && (
+            <motion.div
+              key="skill-verification"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <SkillVerification 
+                userProfile={userProfile}
+                currentUser={currentUser}
+                onProfileUpdate={(updated) => setUserProfile(updated)}
+                triggerToast={triggerToast}
+              />
+            </motion.div>
+          )}
+
+          {activeScreen === 'auth' && (
+            <motion.div
+              key="auth"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Auth 
+                onLoginSuccess={(user, profile) => {
+                  localStorage.setItem('talentstage_user', JSON.stringify(user));
+                  setCurrentUser(user);
+                  setUserProfile(profile);
+                  // Dynamic redirect based on preference
+                  if (user.role === 'Client') {
+                    setActiveScreen('client-portal');
+                  } else {
+                    setActiveScreen('freelancer-console');
+                  }
+                  triggerToast(`Access granted. Switched environment session to ${user.fullName}`);
+                }}
+                onNavigateTo={navigateTo}
+              />
+            </motion.div>
+          )}
         </AnimatePresence>
       </div>
 
@@ -310,6 +479,20 @@ export default function App() {
             onSuccess={() => {
               triggerToast(`Secure Escrow Vault created and funded successfully for ${selectedProposalForEscrow.title}!`);
             }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Guided Walkthrough Tour overlay portal */}
+      <AnimatePresence>
+        {tourActive && (
+          <NewUserTour 
+            onClose={() => {
+              setTourActive(false);
+              setTourCompleted(true);
+              localStorage.setItem('talentstage_tour_completed', 'true');
+            }}
+            onNavigateToScreen={(screen) => navigateTo(screen)}
           />
         )}
       </AnimatePresence>

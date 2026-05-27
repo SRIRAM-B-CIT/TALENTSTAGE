@@ -60,4 +60,7 @@ export type ActiveScreen =
   | 'client-portal'
   | 'freelancer-console'
   | 'onboarding'
-  | 'escrow-vault';
+  | 'escrow-vault'
+  | 'auth'
+  | 'inbox'
+  | 'skill-verification';

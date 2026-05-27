@@ -6,7 +6,8 @@
 import { MongoClient } from 'mongodb';
 import { INITIAL_TALENTS, INITIAL_PROPOSALS, INITIAL_ENGAGEMENTS, DEFAULT_PROFILE } from './src/data';
 
-const MONGO_URI = "mongodb+srv://sriram23229_db_user:26G0P1F0XpUBLJ1C@cluster0.wjxutts.mongodb.net/?appName=Cluster0";
+const DEFAULT_MONGO_URI = "mongodb+srv://sriram23229_db_user:26G0P1F0XpUBLJ1C@cluster0.wjxutts.mongodb.net/?appName=Cluster0";
+const MONGO_URI = process.env.MONGODB_URI || DEFAULT_MONGO_URI;
 const DB_NAME = "talentstage_db";
 
 let client: MongoClient | null = null;
@@ -66,9 +67,28 @@ export async function initDatabase() {
     const profileCount = await profilesCollection.countDocuments();
     if (profileCount === 0) {
       await profilesCollection.insertOne({ _id: 'default_user' as any, ...DEFAULT_PROFILE });
+      await profilesCollection.insertOne({ _id: 'demo_user' as any, ...DEFAULT_PROFILE });
       console.log("Seeded default professional user profile into MongoDB");
     } else {
       console.log("Profiles collection already exists, skipping seed.");
+    }
+
+    // Seed Auth Users
+    const usersCollection = db.collection('users');
+    const userCount = await usersCollection.countDocuments();
+    if (userCount === 0) {
+      await usersCollection.insertOne({
+        _id: 'demo_user' as any,
+        username: 'amit_verma',
+        email: 'amit_verma@sample.com',
+        password: 'demo123', // Secure demo login credentials
+        fullName: 'Amit Verma',
+        role: 'Both',
+        verifiedStatus: 'verified',
+        verificationDoc: 'https://linkedin.com/in/amitvermascale',
+        isPro: true
+      });
+      console.log("Seeded demo user into MongoDB 'users' space");
     }
 
     console.log("MongoDB Database connected and validated.");

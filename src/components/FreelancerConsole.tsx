@@ -23,12 +23,15 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { DEFAULT_PROFILE } from '../data';
+import { ProfileCore } from '../types';
 
 interface FreelancerConsoleProps {
   onUpgradeTrigger?: () => void;
+  userProfile?: ProfileCore;
+  currentUser?: any;
 }
 
-export default function FreelancerConsole({ onUpgradeTrigger }: FreelancerConsoleProps) {
+export default function FreelancerConsole({ onUpgradeTrigger, userProfile, currentUser }: FreelancerConsoleProps) {
   // Local finances state
   const [netFunds, setNetFunds] = useState(1125000); // Scaled to ₹11.25L INR
   const [withdrawing, setWithdrawing] = useState(false);
@@ -115,11 +118,16 @@ export default function FreelancerConsole({ onUpgradeTrigger }: FreelancerConsol
     setAuditing(true);
     setAuditResult(null);
 
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (currentUser && currentUser._id) {
+      headers['x-user-id'] = currentUser._id;
+    }
+
     try {
       const response = await fetch('/api/audit', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(DEFAULT_PROFILE),
+        headers,
+        body: JSON.stringify(userProfile || DEFAULT_PROFILE),
       });
 
       if (response.ok) {
@@ -151,40 +159,71 @@ export default function FreelancerConsole({ onUpgradeTrigger }: FreelancerConsol
         
         {/* Profile Completeness Circular Ring (Span 4) */}
         <div className="lg:col-span-4 bg-surface-container-lowest border border-border-dark p-bento-padding rounded-xl flex flex-col items-center justify-center text-center bento-card">
-          <div className="relative w-32 h-32 mb-6">
-            <svg className="w-full h-full transform -rotate-90">
-              <circle className="text-zinc-800" cx="64" cy="64" fill="transparent" r="56" stroke="currentColor" strokeWidth="6" />
-              <motion.circle 
-                className="text-primary" 
-                cx="64" 
-                cy="64" 
-                fill="transparent" 
-                r="56" 
-                stroke="currentColor" 
-                strokeWidth="6" 
-                strokeDasharray={351.8}
-                initial={{ strokeDashoffset: 351.8 }}
-                animate={{ strokeDashoffset: 351.8 - (351.8 * integrityScore) / 100 }}
-                transition={{ duration: 1.2, ease: 'easeOut' }}
-              />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-3xl font-sans font-black text-white">{integrityScore}%</span>
-              <span className="text-[10px] font-mono text-on-surface-variant font-bold uppercase tracking-wider">integrity</span>
-            </div>
-          </div>
-          
-          <h3 className="text-lg font-bold text-white mb-2">Profile Integrity</h3>
-          <p className="text-xs text-on-surface-variant mb-4 px-4 leading-relaxed">
-            High integrity results in direct elite invitations from Fintech &amp; Web3 enterprise briefs.
-          </p>
+          {(() => {
+            const profile = userProfile || DEFAULT_PROFILE;
+            let score = 0;
+            const reasons: string[] = [];
+            if (profile.fullName && profile.fullName.trim().length > 2) score += 20; else reasons.push("fullName");
+            if (profile.title && profile.title.trim().length > 3) score += 20; else reasons.push("title");
+            if (profile.hourlyRate && Number(profile.hourlyRate) > 0) score += 20; else reasons.push("hourlyRate");
+            if (profile.skills && profile.skills.trim().length > 1) score += 20; else reasons.push("skills");
+            if (profile.description && profile.description.trim().length > 10) score += 20; else reasons.push("description");
+            const finalScore = Math.min(100, score);
 
-          <div className="bg-primary/10 border border-primary/20 p-3.5 rounded-lg text-left w-full">
-            <p className="text-primary font-bold text-xs flex items-center gap-1.5 font-mono">
-              <Sparkles className="w-3.5 h-3.5" /> RECOMMENDATION
-            </p>
-            <p className="text-white text-xs mt-1 leading-normal font-medium">Add results to Project 3 (+15% score)</p>
-          </div>
+            return (
+              <>
+                <div className="relative w-32 h-32 mb-6">
+                  <svg className="w-full h-full transform -rotate-90">
+                    <circle className="text-zinc-800" cx="64" cy="64" fill="transparent" r="56" stroke="currentColor" strokeWidth="6" />
+                    <motion.circle 
+                      className="text-primary" 
+                      cx="64" 
+                      cy="64" 
+                      fill="transparent" 
+                      r="56" 
+                      stroke="currentColor" 
+                      strokeWidth="6" 
+                      strokeDasharray={351.8}
+                      initial={{ strokeDashoffset: 351.8 }}
+                      animate={{ strokeDashoffset: 351.8 - (351.8 * finalScore) / 100 }}
+                      transition={{ duration: 1.2, ease: 'easeOut' }}
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-3xl font-sans font-black text-white">{finalScore}%</span>
+                    <span className="text-[10px] font-mono text-on-surface-variant font-bold uppercase tracking-wider">completeness</span>
+                  </div>
+                </div>
+                
+                <h3 className="text-lg font-bold text-white mb-2">Profile Completeness</h3>
+                <p className="text-xs text-on-surface-variant mb-4 px-4 leading-relaxed">
+                  {finalScore === 100 
+                    ? "Your profile is 100% complete! Enterprise clients prioritizes verified and finalized bios for elite contract assignments."
+                    : "Fill in missing sections to reach 100% strength and stand out in the automated matchmaking rounds."
+                  }
+                </p>
+
+                {reasons.length > 0 ? (
+                  <div className="bg-amber-500/10 border border-amber-500/25 p-3.5 rounded-lg text-left w-full space-y-1">
+                    <p className="text-amber-400 font-bold text-[10.5px] flex items-center gap-1.5 font-mono">
+                      <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> PROFILE NUDGE
+                    </p>
+                    <p className="text-white text-xs leading-normal font-medium">
+                      Missing: <span className="text-amber-300 font-mono font-bold text-[11px]">{reasons.map(r => r === 'description' ? 'Bio Description' : r === 'hourlyRate' ? 'Hourly Rate' : r === 'skills' ? 'Skills' : r === 'fullName' ? 'Full Name' : r === 'title' ? 'Professional Title' : r).join(', ')}</span>
+                    </p>
+                    <p className="text-[10.5px] text-zinc-400">Head over to the onboarding tab or update profile fields to gain up to +{reasons.length * 20}% score boost!</p>
+                  </div>
+                ) : (
+                  <div className="bg-emerald-500/10 border border-emerald-500/25 p-3.5 rounded-lg text-left w-full">
+                    <p className="text-primary font-bold text-xs flex items-center gap-1.5 font-mono">
+                      <Sparkles className="w-3.5 h-3.5" /> STAGE VERIFIED
+                    </p>
+                    <p className="text-white text-xs mt-1 leading-normal font-medium font-sans">Your profile meets standard requirements! Perform live audits to verify integrity credentials.</p>
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </div>
 
         {/* Ledger Hub (Span 8) */}

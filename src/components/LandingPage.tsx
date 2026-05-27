@@ -332,6 +332,133 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           </motion.div>
 
         </div>
+
+        {/* Section: AI Telemetry & Activity Indicator Ticker */}
+        <section className="mt-16 bg-zinc-900/40 border border-zinc-800 rounded-2xl p-6 relative overflow-hidden">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+            <span className="font-mono text-[10px] text-primary flex items-center gap-1.5 uppercase font-bold tracking-wider">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+              <span>AI Core Operations Ticker</span>
+            </span>
+            <span className="text-zinc-500 font-mono text-[11px]">AUTONOMOUS STAGE ENGAGEMENT</span>
+          </div>
+          <div className="space-y-3 font-mono text-[11.5px] text-zinc-400">
+            <div className="flex gap-2 items-start py-1 border-b border-zinc-800/60 leading-normal">
+              <span className="text-primary">[11:42 AM]</span>
+              <span className="text-zinc-300">Intelligent Scoping Engine drafted a Web3 Infrastructure proposal with 3 milestones (98% match).</span>
+            </div>
+            <div className="flex gap-2 items-start py-1 border-b border-zinc-800/60 leading-normal">
+              <span className="text-primary">[11:30 AM]</span>
+              <span className="text-zinc-300">Dynamic credentials verification audit evaluated Priya Nair for crypto multisig smart contract safety.</span>
+            </div>
+            <div className="flex gap-2 items-start py-1 leading-normal">
+              <span className="text-primary">[11:15 AM]</span>
+              <span className="text-zinc-300">Simulated secure Escrow contract #TS-2026-642 funded with 10% platform fee deduction logged.</span>
+            </div>
+          </div>
+        </section>
+
+        {/* Section: Featured Elite Creative Talents */}
+        <section className="mt-20">
+          <div className="flex items-center justify-between gap-4 mb-8">
+            <div>
+              <span className="font-mono text-[10px] text-primary block uppercase font-bold tracking-widest mb-1">CURATED NETWORK</span>
+              <h2 className="text-2xl font-bold text-white tracking-tight font-sans">Featured Elite Creators</h2>
+            </div>
+            <button 
+              onClick={() => onNavigate('marketplace')}
+              className="text-xs text-primary font-mono hover:underline cursor-pointer flex items-center gap-1"
+            >
+              <span>Explore Marketplace</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center font-bold text-white">
+                  RS
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white leading-none">Rohan Sharma</h3>
+                  <span className="text-[10px] text-primary font-mono uppercase tracking-tight block mt-1">Sr. AI Architecture Lead</span>
+                </div>
+              </div>
+              <p className="text-xs text-zinc-400 leading-relaxed mb-4">
+                Specialized in deep neural network optimization, unsloth parameter configurations, and secure prompt execution matrices.
+              </p>
+              <div className="flex gap-1.5 flex-wrap">
+                <span className="text-[9px] font-mono bg-zinc-950 text-zinc-400 border border-zinc-805 px-2 py-0.5 rounded">PyTorch</span>
+                <span className="text-[9px] font-mono bg-zinc-950 text-zinc-400 border border-zinc-805 px-2 py-0.5 rounded">Model Tuning</span>
+              </div>
+            </div>
+
+            <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center font-bold text-white">
+                  AP
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white leading-none">Aarav Patel</h3>
+                  <span className="text-[10px] text-primary font-mono uppercase tracking-tight block mt-1">Frontend Systems Designer</span>
+                </div>
+              </div>
+              <p className="text-xs text-zinc-400 leading-relaxed mb-4">
+                Specialized in hardware-accelerated layouts, micro-interaction components, and responsive modular design systems.
+              </p>
+              <div className="flex gap-1.5 flex-wrap">
+                <span className="text-[9px] font-mono bg-zinc-950 text-zinc-400 border border-zinc-805 px-2 py-0.5 rounded">React</span>
+                <span className="text-[9px] font-mono bg-zinc-950 text-zinc-400 border border-zinc-805 px-2 py-0.5 rounded">Design Systems</span>
+              </div>
+            </div>
+
+            <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center font-bold text-white">
+                  PN
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white leading-none">Priya Nair</h3>
+                  <span className="text-[10px] text-primary font-mono uppercase tracking-tight block mt-1">Smart Contract Auditor</span>
+                </div>
+              </div>
+              <p className="text-xs text-zinc-400 leading-relaxed mb-4">
+                Specialized in EVM security audits, multi-sig smart contract protection parameters, and reentrancy exploit auditing.
+              </p>
+              <div className="flex gap-1.5 flex-wrap">
+                <span className="text-[9px] font-mono bg-zinc-950 text-zinc-400 border border-zinc-805 px-2 py-0.5 rounded">Solidity</span>
+                <span className="text-[9px] font-mono bg-zinc-950 text-zinc-400 border border-zinc-805 px-2 py-0.5 rounded">Multisig</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Section: Premium Enterprise Hiring call to action */}
+        <section className="mt-20 bg-gradient-to-r from-zinc-900 via-zinc-950 to-zinc-900 border border-zinc-805 rounded-2xl p-10 text-center relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+          <div className="relative z-10 space-y-4 max-w-xl mx-auto">
+            <span className="font-mono text-[10px] text-primary px-3 py-1 rounded-full bg-primary/10 border border-primary/20 inline-flex items-center gap-1 uppercase font-bold tracking-widest">
+              <Zap className="w-3 h-3 text-primary" />
+              <span>TalentStage Enterprise Hub</span>
+            </span>
+            <h2 className="text-2xl md:text-3xl font-bold text-white font-sans tracking-tight leading-snug">
+              Secure elite creators with automated AI compliance pipelines.
+            </h2>
+            <p className="text-xs text-zinc-400 leading-relaxed font-sans">
+              Integrate custom milestone contracts, cryptographic ledger matching, and automated candidate auditing inside your corporate workflow pipelines.
+            </p>
+            <div className="pt-4">
+              <button 
+                onClick={() => onNavigate('onboarding')}
+                className="px-6 py-3 bg-primary hover:brightness-110 text-zinc-950 text-xs font-bold rounded-lg transition-all cursor-pointer font-sans"
+              >
+                Assemble Enterprise Workspace
+              </button>
+            </div>
+          </div>
+        </section>
+
       </main>
     </div>
   );

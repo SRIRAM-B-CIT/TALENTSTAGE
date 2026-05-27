@@ -8,6 +8,7 @@ import path from 'path';
 import {GoogleGenAI, Type} from '@google/genai';
 import {createServer as createViteServer} from 'vite';
 import { getDbClient, initDatabase, isDbConnected } from './mongodb-client';
+import { DEFAULT_PROFILE } from './src/data';
 
 const app = express();
 const PORT = 3000;
@@ -431,17 +432,125 @@ app.get('/api/engagements', async (req, res) => {
   }
 });
 
+// 8.5 MongoDB Endpoint: Sign Up
+app.post('/api/auth/signup', async (req, res) => {
+  try {
+    const { email, username, password, fullName, role, verificationType, verificationDoc, isProSelected } = req.body;
+    if (!email || !username || !password || !fullName) {
+      return res.status(400).json({ error: "Missing required onboarding credentials." });
+    }
+
+    const client = await getDbClient();
+    const db = client.db("talentstage_db");
+    const usersCollection = db.collection("users");
+    const profilesCollection = db.collection("profiles");
+
+    // Check if user already exists
+    const existingUser = await usersCollection.findOne({
+      $or: [{ email: email.toLowerCase() }, { username: username.toLowerCase() }]
+    });
+
+    if (existingUser) {
+      return res.status(400).json({ error: "A user with this email or username already exists on TalentStage." });
+    }
+
+    const userId = `user-${Date.now()}`;
+    const newUser = {
+      _id: userId,
+      email: email.toLowerCase(),
+      username: username.toLowerCase(),
+      password, // Sandbox plaintext
+      fullName,
+      role,
+      verifiedStatus: verificationDoc ? 'pending' : 'unverified',
+      verificationDoc: verificationDoc || '',
+      isPro: isProSelected || false
+    };
+
+    await usersCollection.insertOne(newUser as any);
+
+    // Seed matching customized profile space
+    const customProfile = {
+      _id: userId as any,
+      fullName,
+      title: role === 'Client' ? 'Enterprise Client Executive' : 'Creative Director / Developer',
+      hourlyRate: role === 'Client' ? 0 : 3500,
+      skills: role === 'Client' ? 'Project Scoping, Vendor Matching, Escrow Handling' : 'React, Figma, UX Strategy',
+      companyName: role === 'Client' ? `${fullName}'s Studio` : 'Independent Portfolio Space',
+      industry: 'Design & Engineering SaaS',
+      websiteUrl: 'https://talentstage.io',
+      description: `Premium integrated profile space for ${fullName}. Managing creative workflows under TalentStage's hybrid workspace network.`
+    };
+
+    await profilesCollection.insertOne(customProfile);
+
+    return res.json({ success: true, user: newUser, profile: customProfile });
+  } catch (err: any) {
+    console.error("Signup failed:", err);
+    return res.status(500).json({ error: "Database registration failure", details: err.message });
+  }
+});
+
+// 8.6 MongoDB Endpoint: Log In
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: "Please enter your email/username and password" });
+    }
+
+    const client = await getDbClient();
+    const db = client.db("talentstage_db");
+    const usersCollection = db.collection("users");
+    const profilesCollection = db.collection("profiles");
+
+    // Seek match (either by email or username, and matching password)
+    const normalizedInput = email.toLowerCase();
+    const user = await usersCollection.findOne({
+      $and: [
+        { $or: [{ email: normalizedInput }, { username: normalizedInput }] },
+        { password: password }
+      ]
+    });
+
+    if (!user) {
+      return res.status(401).json({ error: "Account credentials incorrect. Please try again." });
+    }
+
+    // Fetch companion profile
+    let profile = await profilesCollection.findOne({ _id: user._id as any });
+    if (!profile) {
+      const customProfile = {
+        _id: user._id as any,
+        ...DEFAULT_PROFILE,
+        fullName: user.fullName
+      };
+      await profilesCollection.insertOne(customProfile);
+      profile = customProfile;
+    }
+
+    return res.json({ success: true, user, profile });
+  } catch (err: any) {
+    console.error("Login endpoint failure:", err);
+    return res.status(500).json({ error: "Internal Auth validation failure", details: err.message });
+  }
+});
+
 // 9. MongoDB Endpoint: Fetch active single user profile
 app.get('/api/profile', async (req, res) => {
   try {
     const client = await getDbClient();
     const profilesCollection = client.db("talentstage_db").collection("profiles");
-    let profile = await profilesCollection.findOne({ _id: 'default_user' as any });
+    
+    // Check header for dynamic profile resolution
+    const headerUserId = req.headers['x-user-id'];
+    const searchId = headerUserId ? headerUserId : 'default_user';
+
+    let profile = await profilesCollection.findOne({ _id: searchId as any });
     if (!profile) {
-      // Fallback seed
-      const { DEFAULT_PROFILE } = require('./src/data');
-      await profilesCollection.insertOne({ _id: 'default_user' as any, ...DEFAULT_PROFILE });
-      profile = await profilesCollection.findOne({ _id: 'default_user' as any });
+      const customProfile = { _id: searchId as any, ...DEFAULT_PROFILE };
+      await profilesCollection.insertOne(customProfile);
+      profile = customProfile;
     }
     return res.json(profile);
   } catch (err: any) {
@@ -455,10 +564,22 @@ app.post('/api/profile', async (req, res) => {
     const profileData = req.body;
     const client = await getDbClient();
     const profilesCollection = client.db("talentstage_db").collection("profiles");
+    
+    // Resolve dynamic profile id to save
+    const headerUserId = req.headers['x-user-id'];
+    const saveId = headerUserId ? headerUserId : 'default_user';
+
     const docToSave = { ...profileData };
     delete docToSave._id; // Ensure we don't cause MongoDB immutable _id error
-    await profilesCollection.replaceOne({ _id: 'default_user' as any }, { _id: 'default_user' as any, ...docToSave }, { upsert: true });
-    return res.json({ success: true, profile: profileData });
+    await profilesCollection.replaceOne({ _id: saveId as any }, { _id: saveId as any, ...docToSave }, { upsert: true });
+    
+    // Also update corresponding user full name if synced
+    if (headerUserId && docToSave.fullName) {
+      const usersCollection = client.db("talentstage_db").collection("users");
+      await usersCollection.updateOne({ _id: headerUserId as any }, { $set: { fullName: docToSave.fullName } });
+    }
+
+    return res.json({ success: true, profile: docToSave });
   } catch (err: any) {
     return res.status(500).json({ error: "Failed to update profile space in MongoDB", details: err.message });
   }
