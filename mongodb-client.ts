@@ -159,18 +159,20 @@ export async function getDbClient(): Promise<MongoClient> {
     }
 
     try {
-      client = new MongoClient(MONGO_URI, {
+      const tempClient = new MongoClient(MONGO_URI, {
         connectTimeoutMS: 2000,
         socketTimeoutMS: 2000,
         serverSelectionTimeoutMS: 2000,
       });
-      await client.connect();
+      await tempClient.connect();
+      client = tempClient;
       dbConnected = true;
       console.log("Successfully connected to MongoDB cluster!");
       // Lazy background seeding
       initDatabase().catch(e => console.warn("Lazy database seed failed:", e));
     } catch (err: any) {
       console.error("Failed to connect to MongoDB Atlas. Falling back to high-fidelity Local In-Memory Database Mode. Error details:", err.message);
+      client = null;
       isUsingMemoryStore = true;
       dbConnected = true;
       return new MockMongoClient() as any;
