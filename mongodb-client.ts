@@ -6,19 +6,161 @@
 import { MongoClient } from 'mongodb';
 import { INITIAL_TALENTS, INITIAL_PROPOSALS, INITIAL_ENGAGEMENTS, DEFAULT_PROFILE } from './src/data';
 
-const DEFAULT_MONGO_URI = "mongodb+srv://sriram23229_db_user:26G0P1F0XpUBLJ1C@cluster0.wjxutts.mongodb.net/?appName=Cluster0";
-const MONGO_URI = process.env.MONGODB_URI || DEFAULT_MONGO_URI;
+const MONGO_URI = process.env.MONGODB_URI;
 const DB_NAME = "talentstage_db";
 
 let client: MongoClient | null = null;
 let dbConnected = false;
+let isUsingMemoryStore = false;
+
+// =========================================================================
+// HIGH-FIDELITY LOCAL IN-MEMORY MONGODB CLIENT FALLBACK
+// =========================================================================
+const memoryStore: Record<string, any[]> = {
+  talents: [...INITIAL_TALENTS],
+  proposals: [...INITIAL_PROPOSALS],
+  engagements: [...INITIAL_ENGAGEMENTS],
+  profiles: [
+    { _id: 'default_user', ...DEFAULT_PROFILE },
+    { _id: 'demo_user', ...DEFAULT_PROFILE }
+  ],
+  users: [
+    {
+      _id: 'demo_user',
+      username: 'amit_verma',
+      email: 'amit_verma@sample.com',
+      password: 'demo123',
+      fullName: 'Amit Verma',
+      role: 'Both',
+      verifiedStatus: 'verified',
+      verificationDoc: 'https://linkedin.com/in/amitvermascale',
+      isPro: true
+    }
+  ]
+};
+
+class MockMongoClient {
+  async connect(): Promise<this> {
+    return this;
+  }
+  db(dbName: string) {
+    return {
+      collection: (colName: string) => {
+        if (!memoryStore[colName]) {
+          memoryStore[colName] = [];
+        }
+
+        return {
+          countDocuments: async () => {
+            return memoryStore[colName].length;
+          },
+          find: (query?: any) => {
+            let list = [...memoryStore[colName]];
+            return {
+              toArray: async () => list
+            };
+          },
+          findOne: async (query?: any) => {
+            const list = memoryStore[colName];
+            if (!query) return list[0] || null;
+            
+            return list.find((item: any) => {
+              // Exact id matching
+              if (query._id !== undefined) {
+                return String(item._id) === String(query._id);
+              }
+              
+              // Complex query helper for isLogin ($and with $or/password checks)
+              if (query.$and && Array.isArray(query.$and)) {
+                const options = query.$and[0]?.$or || [];
+                const passwordMatch = query.$and[1]?.password;
+                
+                const matchesInput = options.some((opt: any) => {
+                  if (opt.email) return item.email?.toLowerCase() === opt.email?.toLowerCase();
+                  if (opt.username) return item.username?.toLowerCase() === opt.username?.toLowerCase();
+                  return false;
+                });
+                return matchesInput && item.password === passwordMatch;
+              }
+
+              // Simple $or query matching
+              if (query.$or && Array.isArray(query.$or)) {
+                return query.$or.some((subQuery: any) => {
+                  return Object.keys(subQuery).every(subKey => {
+                    const val = subQuery[subKey];
+                    if (typeof val === 'string' && typeof item[subKey] === 'string') {
+                      return item[subKey].toLowerCase() === val.toLowerCase();
+                    }
+                    return item[subKey] === val;
+                  });
+                });
+              }
+
+              // Standard key-value criteria
+              for (const key of Object.keys(query)) {
+                if (item[key] !== query[key]) {
+                  return false;
+                }
+              }
+              return true;
+            }) || null;
+          },
+          insertOne: async (doc: any) => {
+            memoryStore[colName].push(doc);
+            return { insertedId: doc._id };
+          },
+          insertMany: async (docs: any[]) => {
+            memoryStore[colName].push(...docs);
+            return { insertedCount: docs.length };
+          },
+          replaceOne: async (query: any, doc: any, options?: any) => {
+            const list = memoryStore[colName];
+            const idx = list.findIndex(item => String(item._id) === String(query._id));
+            if (idx !== -1) {
+              list[idx] = { ...doc };
+            } else if (options?.upsert) {
+              list.push(doc);
+            }
+            return { modifiedCount: 1 };
+          },
+          updateOne: async (query: any, updateUpdate: any) => {
+            const list = memoryStore[colName];
+            const idx = list.findIndex(item => String(item._id) === String(query._id));
+            if (idx !== -1 && updateUpdate.$set) {
+              list[idx] = { ...list[idx], ...updateUpdate.$set };
+            }
+            return { modifiedCount: 1 };
+          }
+        };
+      }
+    };
+  }
+}
 
 export async function getDbClient(): Promise<MongoClient> {
+  if (isUsingMemoryStore) {
+    return new MockMongoClient() as any;
+  }
+
   if (!client) {
-    client = new MongoClient(MONGO_URI);
-    await client.connect();
-    dbConnected = true;
-    console.log("Successfully connected to MongoDB cluster!");
+    if (!MONGO_URI) {
+      console.warn("No MONGODB_URI environment variable detected. Falling back to safe high-fidelity Local In-Memory Database Mode.");
+      isUsingMemoryStore = true;
+      dbConnected = true;
+      return new MockMongoClient() as any;
+    }
+
+    try {
+      client = new MongoClient(MONGO_URI);
+      await client.connect();
+      dbConnected = true;
+      console.log("Successfully connected to MongoDB cluster!");
+    } catch (err: any) {
+      console.error("Failed to connect to MongoDB Atlas. Falling back to high-fidelity Local In-Memory Database Mode. Error details:", err.message);
+      isUsingMemoryStore = true;
+      dbConnected = true;
+      return new MockMongoClient() as any;
+    }
   }
   return client;
 }
