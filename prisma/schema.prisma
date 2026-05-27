@@ -1,0 +1,451 @@
+datasource db {
+  provider = "mongodb"
+  url      = env("MONGODB_URI")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ==========================================
+// ENUMS
+// ==========================================
+
+enum UserRole {
+  CLIENT
+  FREELANCER
+  BOTH
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  FLAGGED
+}
+
+enum ProjectStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ProposalStatus {
+  PENDING
+  SHORTLISTED
+  ACCEPTED
+  REJECTED
+}
+
+enum ContractStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  DISPUTED
+  TERMINATED
+}
+
+enum MilestoneState {
+  UNFUNDED
+  FUNDED
+  SUBMITTED
+  APPROVED
+  PAID
+}
+
+enum TransactionType {
+  ESCROW_DEPOSIT
+  ESCROW_RELEASE
+  PLATFORM_FEE_LOG
+  WITHDRAWAL
+  REFUND
+}
+
+// ==========================================
+// EMBEDDED MongoDB TYPES (Prisma Composite Types)
+// ==========================================
+
+type PortfolioProject {
+  title              String
+  description        String
+  category           String
+  techStack          String[]
+  toolsUsed          String[]
+  images             String[]
+  liveLinks          String[]
+  githubLinks        String[]
+  measurableOutcomes String
+  featured           Boolean   @default(false)
+}
+
+type WorkExperience {
+  company     String
+  position    String
+  startDate   DateTime
+  endDate     DateTime?
+  current     Boolean   @default(false)
+  description String
+}
+
+type EducationHistory {
+  institution String
+  degree      String
+  field       String
+  startYear   Int
+  endYear     Int?
+}
+
+type Review {
+  id          String   @default(uuid())
+  authorName  String
+  authorId    String
+  rating      Float
+  text        String
+  createdAt   DateTime @default(now())
+}
+
+type MessageAttachment {
+  name String
+  type String
+  size Float // In megabytes
+  url  String
+}
+
+type VerificationQuestion {
+  id         String   @default(uuid())
+  text       String
+  options    String[]
+  correctIdx Int
+}
+
+type PromptingChallenge {
+  topic             String
+  instructions      String
+  idealOutputRegexp String
+}
+
+// ==========================================
+// DATABASE MODELS
+// ==========================================
+
+model User {
+  id                       String             @id @default(auto()) @map("_id") @db.ObjectId
+  name                     String
+  username                 String             @unique
+  email                    String             @unique
+  passwordHash             String
+  avatar                   String?
+  bio                      String?
+  role                     UserRole           @default(FREELANCER)
+  onboardingCompleted      Boolean            @default(false)
+  profileCompleteness      Int                @default(0)
+  availabilityStatus       Boolean            @default(true)
+  location                 String?
+  timezone                 String             @default("IST")
+  identityVerification     VerificationStatus @default(UNVERIFIED)
+  linkedinUrl              String?
+  studentIdUrl             String?
+  aiProfileScore           Int                @default(0)
+  proSubscription          Boolean            @default(false)
+  createdAt                DateTime           @default(now())
+  updatedAt                DateTime           @updatedAt
+
+  // Single Account Relationships
+  freelancerProfile        FreelancerProfile?
+  clientProfile            ClientProfile?
+
+  // Community & Social
+  posts                    Post[]
+  comments                 Comment[]
+  likes                    Like[]
+  mentorshipProfile        MentorshipProfile?
+  
+  // Messaging Partnerships
+  conversationIDs          String[]           @db.ObjectId
+  conversations            Conversation[]     @relation(fields: [conversationIDs], references: [id])
+  sentMessages             Message[]          @relation("SentMessages")
+
+  // Transactions Ledger
+  ledgerEntries            TransactionLedger[]
+
+  @@index([role])
+  @@index([identityVerification])
+  @@index([onboardingCompleted])
+}
+
+model FreelancerProfile {
+  id                String             @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String             @unique @db.ObjectId
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  headline          String
+  hourlyRate        Float
+  yearsOfExperience Float
+  languages         String[]
+  education         EducationHistory[]
+  experience        WorkExperience[]
+  portfolio         PortfolioProject[]
+  verifiedSkills    String[]
+  normalSkills      String[]
+  totalEarnings     Float              @default(0.0)
+  pendingEarnings   Float              @default(0.0)
+  completedProjects Int                @default(0)
+  responseTimeHours Float              @default(4.0)
+  reviews           Review[]
+  socialLinks       Json?              // Object containing github, twitter, personal URLs
+
+  // Hiring Relational pipelines
+  proposals         Proposal[]
+  activeContracts   Contract[]
+
+  @@index([hourlyRate])
+  @@index([verifiedSkills])
+}
+
+model ClientProfile {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String   @unique @db.ObjectId
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  companyName       String?
+  companySize       String?
+  companyWebsite    String?
+  industry          String?
+  hiringHistoryCount Int     @default(0)
+  activeProjectsCount Int    @default(0)
+  totalSpending     Float    @default(0.0)
+  savedFreelancerIDs String[] @db.ObjectId
+  reviews           Review[]
+
+  // Action pipelines
+  projects          Project[]
+
+  @@index([companyName])
+}
+
+model Project {
+  id                String         @id @default(auto()) @map("_id") @db.ObjectId
+  clientId          String         @db.ObjectId
+  client            ClientProfile  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  
+  title             String
+  description       String
+  requiredSkills    String[]
+  budgetMin         Float
+  budgetMax         Float
+  projectType       String         @default("FIXED") // FIXED or HOURLY
+  deadline          DateTime?
+  aiGeneratedBrief  Json?          // Stores structured prompt scoped details
+  status            ProjectStatus  @default(OPEN)
+  
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  contracts         Contract[]
+  proposals         Proposal[]
+
+  @@index([status])
+  @@index([requiredSkills])
+  @@index([createdAt])
+}
+
+model Proposal {
+  id                String         @id @default(auto()) @map("_id") @db.ObjectId
+  projectId         String         @db.ObjectId
+  project           Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  freelancerId      String         @db.ObjectId
+  freelancer        FreelancerProfile @relation(fields: [freelancerId], references: [id], onDelete: Cascade)
+  
+  bidAmount         Float
+  estimatedDays     Int
+  coverMessage      String
+  
+  // AI Agent Metrics Evaluators
+  aiEvaluationScore Int            @default(0) // 1-100 match standard
+  relevanceScore    Int            @default(0)
+  clarityScore      Int            @default(0)
+  valueScore        Int            @default(0)
+  
+  status            ProposalStatus @default(PENDING)
+  createdAt         DateTime       @default(now())
+
+  @@index([projectId, status])
+  @@index([freelancerId])
+}
+
+model Contract {
+  id                 String             @id @default(auto()) @map("_id") @db.ObjectId
+  projectId          String             @db.ObjectId
+  project            Project            @relation(fields: [projectId], references: [id])
+  
+  freelancerId       String             @db.ObjectId
+  freelancer         FreelancerProfile  @relation(fields: [freelancerId], references: [id])
+  
+  deliverables       String[]
+  revisionsAllowed   Int                @default(3)
+  uploadedFiles      MessageAttachment[]
+  status             ContractStatus     @default(DRAFT)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  milestones         Milestone[]
+
+  @@index([status])
+}
+
+model Milestone {
+  id               String         @id @default(auto()) @map("_id") @db.ObjectId
+  contractId       String         @db.ObjectId
+  contract         Contract       @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  
+  title            String
+  description      String?
+  amount           Float
+  platformFee      Float          // Constant 10% platform fee simulation
+  payoutAmount     Float          // Amount minus platform fee (90% remains)
+  submittedFiles   MessageAttachment[]
+  approvalState    MilestoneState @default(UNFUNDED)
+  
+  dueDate          DateTime?
+  paidAt           DateTime?
+
+  @@index([approvalState])
+}
+
+model SkillTest {
+  id               String                 @id @default(auto()) @map("_id") @db.ObjectId
+  category         String                 @unique // e.g. "React Engine", "EVM Auditing", "Prompt Tuning"
+  questions        VerificationQuestion[]
+  practical        PromptingChallenge?
+  passingPercentage Float                 @default(66.6)
+  durationMinutes  Int                    @default(15)
+  createdAt        DateTime               @default(now())
+}
+
+model SkillTestAttempt {
+  id               String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId           String    @db.ObjectId
+  category         String
+  scoreSecured     Float
+  passed           Boolean
+  timestamp        DateTime  @default(now())
+
+  @@index([userId, category])
+}
+
+// ==========================================
+// COLLABORATIVE CHAT & CONVERSATIONS
+// ==========================================
+
+model Conversation {
+  id               String         @id @default(auto()) @map("_id") @db.ObjectId
+  userIDs          String[]       @db.ObjectId
+  users            User[]         @relation(fields: [userIDs], references: [id])
+  aiSummary        String?        // Ephemeral conversation metrics summary
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  messages         Message[]
+}
+
+model Message {
+  id               String              @id @default(auto()) @map("_id") @db.ObjectId
+  conversationId   String              @db.ObjectId
+  conversation     Conversation        @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  
+  senderId         String              @db.ObjectId
+  sender           User                @relation("SentMessages", fields: [senderId], references: [id])
+  
+  text             String
+  attachments      MessageAttachment[]
+  createdAt        DateTime            @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+// ==========================================
+// SANDBOX TRANSACTION LEDGER
+// ==========================================
+
+model TransactionLedger {
+  id               String          @id @default(auto()) @map("_id") @db.ObjectId
+  userId           String          @db.ObjectId
+  user             User            @relation(fields: [userId], references: [id])
+  
+  projectId        String?         @db.ObjectId
+  milestoneId      String?         @db.ObjectId
+  
+  amount           Float
+  platformCut      Float           @default(0.0) // 10% calculated
+  type             TransactionType
+  description      String
+  timestamp        DateTime        @default(now())
+
+  @@index([userId, timestamp])
+}
+
+// ==========================================
+// HOOKS & COMMUNITY FEATURES
+// ==========================================
+
+model Post {
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  authorId   String    @db.ObjectId
+  author     User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  title      String
+  content    String
+  tags       String[]
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  comments   Comment[]
+  likes      Like[]
+
+  @@index([createdAt])
+  @@index([tags])
+}
+
+model Comment {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  postId    String   @db.ObjectId
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String   @db.ObjectId
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([postId])
+}
+
+model Like {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  postId    String   @db.ObjectId
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Ensure user cannot like same post multiple times
+  @@unique([postId, userId])
+}
+
+model MentorshipProfile {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @unique @db.ObjectId
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expertise   String[]
+  hourlyRate  Float    @default(0.0)
+  maxMentees  Int      @default(3)
+  introVideo  String?
+}
+
+model WeeklyChallenge {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String
+  rewardBadge String
+  startDate   DateTime
+  endDate     DateTime
+  submissions Json[]
+}
